@@ -1,0 +1,13 @@
+# Docker ignore file
+.git
+.gitignore
+.dockerignore
+docs/
+scripts/
+tests/
+*.md
+cloudbuild.yaml
+Makefile
+.env
+.env.local
+

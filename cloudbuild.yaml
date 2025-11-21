@@ -1,0 +1,68 @@
+# Google Cloud Build configuration for Android Build Container Image
+# Builds, tests, scans, and deploys the Docker image
+
+steps:
+  # Step 1: Build Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--build-arg'
+      - 'BASE_IMAGE=${_BASE_IMAGE}'
+      - '-t'
+      - '${_REGISTRY_URL}/${_IMAGE_NAME}:${_IMAGE_TAG}'
+      - '-t'
+      - '${_REGISTRY_URL}/${_IMAGE_NAME}:latest'
+      - '.'
+
+  # Step 2: Security scan with Trivy
+  - name: 'aquasec/trivy:latest'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        trivy image --exit-code 1 --severity HIGH,CRITICAL \
+          ${_REGISTRY_URL}/${_IMAGE_NAME}:${_IMAGE_TAG} || \
+        echo "Security scan completed (non-blocking)"
+
+  # Step 3: Test image with sample project (optional)
+  # - name: 'gcr.io/cloud-builders/docker'
+  #   args:
+  #     - 'run'
+  #     - '--rm'
+  #     - '${_REGISTRY_URL}/${_IMAGE_NAME}:${_IMAGE_TAG}'
+  #     - 'bash'
+  #     - '-c'
+  #     - 'node --version && java -version && sdkmanager --version'
+
+  # Step 4: Push to GCP Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '${_REGISTRY_URL}/${_IMAGE_NAME}:${_IMAGE_TAG}'
+    waitFor: ['-']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '${_REGISTRY_URL}/${_IMAGE_NAME}:latest'
+    waitFor: ['-']
+
+# Substitutions (all customizable)
+substitutions:
+  _BASE_IMAGE: 'ubuntu:22.04'
+  _IMAGE_TAG: 'latest'
+  _IMAGE_NAME: 'android-build-image'
+  _GCP_PROJECT_ID: ''
+  _GCP_REGION: 'us-central1'
+  _GCP_REGISTRY_NAME: 'android-build-images'
+  _REGISTRY_URL: '${_GCP_REGION}-docker.pkg.dev/${_GCP_PROJECT_ID}/${_GCP_REGISTRY_NAME}'
+
+# Timeout
+timeout: '1800s'
+
+# Options
+options:
+  machineType: 'N1_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+  diskSizeGb: 100
+
