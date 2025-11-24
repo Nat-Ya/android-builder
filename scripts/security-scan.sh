@@ -20,3 +20,4 @@ trivy image --exit-code "$EXIT_CODE" --severity "$SEVERITY" "$IMAGE"
 
 echo "✅ Security scan completed"
 
+

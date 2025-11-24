@@ -32,3 +32,4 @@ docker push "${REGISTRY_URL}/${IMAGE_NAME}:latest"
 
 echo "✅ Deployed to ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}"
 
+

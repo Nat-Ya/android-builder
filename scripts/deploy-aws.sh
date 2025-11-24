@@ -48,3 +48,4 @@ docker push "${REGISTRY_URL}/${AWS_ECR_REPO}:latest"
 
 echo "✅ Deployed to ${REGISTRY_URL}/${AWS_ECR_REPO}:${IMAGE_TAG}"
 
+

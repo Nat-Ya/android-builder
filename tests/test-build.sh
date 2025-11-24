@@ -32,3 +32,4 @@ docker run --rm -e GRADLE_OPTS="-Xmx2048m" "$IMAGE_NAME:$IMAGE_TAG" bash -c 'ech
 echo ""
 echo "✅ All basic tests passed!"
 
+
