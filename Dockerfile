@@ -91,10 +91,9 @@ RUN chmod +x /usr/local/bin/*.sh && \
     # Ensure /usr/local/bin is in PATH (should be by default, but explicit is better)
     echo 'export PATH="/usr/local/bin:$PATH"' >> /etc/profile
 
-# Create non-root user for security
-RUN useradd -m -s /bin/bash android-builder
-USER android-builder
-WORKDIR /home/android-builder
+# Set working directory for builds
+# Running as root for CI/CD compatibility (build containers are ephemeral and isolated)
+WORKDIR /workspace
 
 # Default command
 CMD ["/bin/bash"]
