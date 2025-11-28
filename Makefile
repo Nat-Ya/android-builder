@@ -6,8 +6,8 @@
 # Default values (all customizable)
 BASE_IMAGE ?= ubuntu:22.04
 IMAGE_TAG ?= latest
-GCP_PROJECT_ID ?= general-476320
-GCP_REGION ?= west-europe
+GCP_PROJECT_ID ?=
+GCP_REGION ?= europe-west1
 GCP_REGISTRY_NAME ?= android-build-images
 AWS_REGION ?= us-east-1
 AWS_ECR_REPO ?= android-build-image
