@@ -1,0 +1,40 @@
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+*.key
+*.jks
+*.keystore
+google-services.json
+credentials.json
+
+# Docker build artifacts
+*.tar
+*.tar.gz
+
+# CI/CD outputs
+build-logs/
+test-results/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.log
+
+# Cloud provider credentials
+.gcloud/
+.aws/
+.azure/
+
+# Trivy security scan cache
+.trivy/
+trivy-cache/
