@@ -80,7 +80,7 @@ substitutions:
   _IMAGE_TAG: 'latest'
   _IMAGE_NAME: 'android-build-image'
   _GCP_PROJECT_ID: ''
-  _GCP_REGION: 'west-europe'
+  _GCP_REGION: 'europe-west1'
   _GCP_REGISTRY_NAME: 'android-build-images'
   _REGISTRY_URL: '${_GCP_REGION}-docker.pkg.dev/${_GCP_PROJECT_ID}/${_GCP_REGISTRY_NAME}'
 
