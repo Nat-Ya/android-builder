@@ -8,6 +8,18 @@ steps:
       - 'build'
       - '--build-arg'
       - 'BASE_IMAGE=${_BASE_IMAGE}'
+      - '--build-arg'
+      - 'JAVA_VERSION=${_JAVA_VERSION}'
+      - '--build-arg'
+      - 'NODE_VERSION=${_NODE_VERSION}'
+      - '--build-arg'
+      - 'ANDROID_BUILD_TOOLS=${_ANDROID_BUILD_TOOLS}'
+      - '--build-arg'
+      - 'ANDROID_PLATFORM=${_ANDROID_PLATFORM}'
+      - '--build-arg'
+      - 'ANDROID_CMAKE_VERSION=${_ANDROID_CMAKE_VERSION}'
+      - '--build-arg'
+      - 'INSTALL_NDK=${_INSTALL_NDK}'
       - '-t'
       - '${_REGISTRY_URL}/${_IMAGE_NAME}:${_IMAGE_TAG}'
       - '-t'
@@ -24,15 +36,24 @@ steps:
           ${_REGISTRY_URL}/${_IMAGE_NAME}:${_IMAGE_TAG} || \
         echo "Security scan completed (non-blocking)"
 
-  # Step 3: Test image with sample project (optional)
-  # - name: 'gcr.io/cloud-builders/docker'
-  #   args:
-  #     - 'run'
-  #     - '--rm'
-  #     - '${_REGISTRY_URL}/${_IMAGE_NAME}:${_IMAGE_TAG}'
-  #     - 'bash'
-  #     - '-c'
-  #     - 'node --version && java -version && sdkmanager --version'
+  # Step 3: Test image (verify tools and helper scripts)
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        docker run --rm ${_REGISTRY_URL}/${_IMAGE_NAME}:${_IMAGE_TAG} \
+          bash -c "
+            echo 'Testing Java...' && java -version && \
+            echo 'Testing Node.js...' && node --version && npm --version && \
+            echo 'Testing Android SDK...' && sdkmanager --version && \
+            echo 'Testing helper scripts...' && \
+            artifact-finder.sh --help > /dev/null 2>&1 && \
+            memory-checker.sh > /dev/null && \
+            build-validator.sh assembleRelease > /dev/null && \
+            echo '✅ All tests passed!'
+          "
+    waitFor: ['-']
 
   # Step 4: Push to GCP Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
@@ -50,10 +71,16 @@ steps:
 # Substitutions (all customizable)
 substitutions:
   _BASE_IMAGE: 'ubuntu:22.04'
+  _JAVA_VERSION: '17'
+  _NODE_VERSION: '20'
+  _ANDROID_BUILD_TOOLS: '34.0.0'
+  _ANDROID_PLATFORM: '34'
+  _ANDROID_CMAKE_VERSION: '3.22.1'
+  _INSTALL_NDK: 'false'
   _IMAGE_TAG: 'latest'
   _IMAGE_NAME: 'android-build-image'
   _GCP_PROJECT_ID: ''
-  _GCP_REGION: 'us-central1'
+  _GCP_REGION: 'west-europe'
   _GCP_REGISTRY_NAME: 'android-build-images'
   _REGISTRY_URL: '${_GCP_REGION}-docker.pkg.dev/${_GCP_PROJECT_ID}/${_GCP_REGISTRY_NAME}'
 

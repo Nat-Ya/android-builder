@@ -1,0 +1,146 @@
+# Example Cloud Build configuration for Android app
+# Demonstrates proper substitution handling and artifact management
+#
+# Usage:
+#   gcloud builds submit . --config examples/cloudbuild-android-app.yaml \
+#     --substitutions="_BUILD_TARGET=assembleRelease,_APP_DIR=android"
+
+steps:
+  # Step 1: Install dependencies
+  # NOTE: Cloud Build runs from project root
+  - name: '${_BUILDER_IMAGE}'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        set -e
+        cd ${_APP_DIR}
+        npm ci
+
+  # Step 2: Configure signing (fetch password from Secret Manager)
+  # Keystore can be in repo or downloaded from GCS - both patterns shown
+  - name: '${_BUILDER_IMAGE}'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        set -e
+        cd ${_APP_DIR}
+        
+        # Fetch keystore password from Secret Manager (if using GCP secrets)
+        if [ -n "${_KEYSTORE_SECRET_NAME}" ]; then
+          KEYSTORE_PASSWORD=$$(gcloud secrets versions access latest --secret=${_KEYSTORE_SECRET_NAME})
+          printf '%s\n' \
+            'MYAPP_RELEASE_STORE_FILE=${_KEYSTORE_FILE:-app-release.keystore}' \
+            'MYAPP_RELEASE_KEY_ALIAS=${_KEY_ALIAS:-app-release-key}' \
+            "MYAPP_RELEASE_STORE_PASSWORD=$$KEYSTORE_PASSWORD" \
+            "MYAPP_RELEASE_KEY_PASSWORD=$$KEYSTORE_PASSWORD" >> android/gradle.properties
+        fi
+        
+        # Download keystore from GCS if specified (optional, can also be in repo)
+        if [ -n "${_KEYSTORE_GCS_PATH}" ]; then
+          echo "Downloading keystore from GCS..."
+          gsutil cp ${_KEYSTORE_GCS_PATH} android/app/${_KEYSTORE_FILE:-app-release.keystore} || \
+            echo "Keystore not in GCS, using repo version if available"
+        fi
+
+  # Step 3: Build Android app
+  # NOTE: Cloud Build runs from project root, so cd into android/ subdirectory
+  - name: '${_BUILDER_IMAGE}'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        set -e
+        cd ${_APP_DIR}/android
+        
+        # Handle Cloud Build substitution properly
+        GRADLE_TASK="${_BUILD_TARGET}"
+        if [ -z "$$GRADLE_TASK" ]; then
+          GRADLE_TASK="assembleRelease"
+        fi
+        
+        echo "Building with task: $$GRADLE_TASK"
+        
+        GRADLE_OPTS="${_GRADLE_OPTS}"
+        if [ -z "$$GRADLE_OPTS" ]; then
+          GRADLE_OPTS="-Xmx4096m -XX:MaxMetaspaceSize=1024m"
+        fi
+        
+        export GRADLE_OPTS
+        ./gradlew $$GRADLE_TASK \
+          --no-daemon \
+          --max-workers=1 \
+          --no-parallel \
+          --stacktrace
+
+  # Step 4: Find and verify artifacts
+  # NOTE: Step 3 ran from android/, artifacts are at app/build/outputs/ relative to android/
+  # From project root, they're at ${_APP_DIR}/android/app/build/outputs/
+  - name: '${_BUILDER_IMAGE}'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        set -e
+        cd ${_APP_DIR}
+        artifact-finder.sh . all
+
+  # Step 5: Upload artifacts to GCS
+  # NOTE: Cloud Build runs from project root, Step 3 ran from android/, artifacts are at android/app/build/...
+  - name: '${_BUILDER_IMAGE}'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        set -e
+        # Determine artifact path based on build target
+        if [ "${_BUILD_TARGET}" = "bundleRelease" ]; then
+          ARTIFACT_PATH="${_APP_DIR}/android/app/build/outputs/bundle/release/app-release.aab"
+          ARTIFACT_NAME="app-release-${BUILD_ID}.aab"
+        else
+          ARTIFACT_PATH="${_APP_DIR}/android/app/build/outputs/apk/release/app-release.apk"
+          ARTIFACT_NAME="app-release-${BUILD_ID}.apk"
+        fi
+        
+        # Check if artifact exists
+        if [ ! -f "$$ARTIFACT_PATH" ]; then
+          echo "Error: Could not find artifact at $$ARTIFACT_PATH"
+          echo "Searching for artifacts..."
+          find . -name "app-release.*" -type f 2>/dev/null | head -10 || true
+          exit 1
+        fi
+        
+        GCS_BUCKET="${_GCS_BUCKET}"
+        if [ -z "$$GCS_BUCKET" ]; then
+          echo "Error: _GCS_BUCKET must be set"
+          exit 1
+        fi
+        
+        echo "Found artifact at: $$ARTIFACT_PATH"
+        echo "Uploading to gs://$$GCS_BUCKET/builds/$$ARTIFACT_NAME"
+        gsutil cp "$$ARTIFACT_PATH" "gs://$$GCS_BUCKET/builds/$$ARTIFACT_NAME"
+    waitFor: ['-']
+
+# Substitutions (with proper defaults)
+substitutions:
+  _BUILDER_IMAGE: 'us-central1-docker.pkg.dev/${PROJECT_ID}/android-build-images/android-build-image:latest'
+  _BUILD_TARGET: 'assembleRelease'  # assembleRelease, assembleDebug, bundleRelease, bundleDebug
+  _APP_DIR: 'app'  # Directory containing Android project (e.g., 'app' for Expo projects)
+  _GRADLE_OPTS: '-Xmx4096m -XX:MaxMetaspaceSize=1024m'  # Gradle memory options (optional)
+  _GCS_BUCKET: ''  # GCS bucket for artifacts (required)
+  # Keystore configuration (all optional - keystore can be in repo or GCS)
+  _KEYSTORE_SECRET_NAME: ''  # Secret Manager secret name for keystore password (optional)
+  _KEYSTORE_GCS_PATH: ''  # GCS path to keystore file, e.g., 'gs://bucket/keystore.jks' (optional)
+  _KEYSTORE_FILE: 'app-release.keystore'  # Keystore filename (default: app-release.keystore)
+  _KEY_ALIAS: 'app-release-key'  # Key alias (default: app-release-key)
+
+# Options
+options:
+  machineType: 'N1_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+  diskSizeGb: 100
+
+# Timeout
+timeout: '1800s'
+

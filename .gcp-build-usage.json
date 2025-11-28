@@ -1,0 +1,11 @@
+{
+  "billing_cycle_start": "2025-11-01",
+  "month": "2025-11",
+  "date": "2025-11-24",
+  "project_id": "general-476320",
+  "build_count": 4,
+  "estimated_minutes": 60,
+  "free_tier_limit": 120,
+  "percentage_used": 50,
+  "remaining_minutes": 60
+}
