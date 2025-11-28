@@ -1,13 +1,50 @@
-# Docker ignore file
+# Git
 .git
 .gitignore
-.dockerignore
+.gitattributes
+
+# Documentation (not needed in image)
 docs/
-scripts/
-tests/
 *.md
-cloudbuild.yaml
-Makefile
-.env
+!README.md
+
+# Examples (not needed in image)
+examples/
+
+# Tests (not needed in image)
+tests/
+
+# Build artifacts
+*.log
+*.tmp
+build/
+dist/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local build files
+*.local
 .env.local
 
+# Cloud Build configs (not needed in image)
+cloudbuild.yaml
+cloudbuild-*.yaml
+
+# Makefile (not needed in image)
+Makefile
+
+# Deployment scripts (not needed in image)
+scripts/deploy-*.sh
+scripts/check-secrets.sh
+
+# Keep helper scripts (needed in image)
+!scripts/helpers/

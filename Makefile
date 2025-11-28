@@ -1,13 +1,13 @@
 # Android Build Container Image - Makefile
 # Build and deploy commands for the Android build container image
 
-.PHONY: help build-local build-gcp test-image scan-security deploy-gcp deploy-aws deploy-azure deploy-dockerhub gcp-login aws-login azure-login dockerhub-login check-secrets
+.PHONY: help build-local build-gcp test-image scan-security deploy-gcp deploy-aws deploy-azure deploy-dockerhub gcp-login aws-login azure-login dockerhub-login check-secrets quota-check quota-report
 
 # Default values (all customizable)
 BASE_IMAGE ?= ubuntu:22.04
 IMAGE_TAG ?= latest
-GCP_PROJECT_ID ?=
-GCP_REGION ?= us-central1
+GCP_PROJECT_ID ?= general-476320
+GCP_REGION ?= west-europe
 GCP_REGISTRY_NAME ?= android-build-images
 AWS_REGION ?= us-east-1
 AWS_ECR_REPO ?= android-build-image
@@ -39,10 +39,13 @@ help:
 	@echo ""
 	@echo "Utilities:"
 	@echo "  make check-secrets        - Verify secrets exist"
+	@echo "  make quota-check          - Check GCP Cloud Build quota usage"
+	@echo "  make quota-report         - Generate detailed quota report"
 	@echo ""
 	@echo "Customization:"
 	@echo "  BASE_IMAGE=debian:bullseye-slim make build-local"
 	@echo "  IMAGE_TAG=v1.0.0 make deploy-gcp"
+	@echo "  NON_INTERACTIVE=true make build-gcp  - Auto-fallback to local if quota exceeded"
 
 # Build locally
 build-local:
@@ -59,9 +62,21 @@ build-gcp:
 		echo "Error: GCP_PROJECT_ID must be set"; \
 		exit 1; \
 	fi
-	gcloud builds submit . \
+	@echo "Checking GCP quota before build..."
+	@NON_INTERACTIVE_FLAG=""; \
+	if [ "$(NON_INTERACTIVE)" = "true" ] || [ "$(NON_INTERACTIVE)" = "1" ]; then \
+		NON_INTERACTIVE_FLAG="--non-interactive"; \
+	fi; \
+	bash scripts/gcp-quota-checker.sh before --project $(GCP_PROJECT_ID) $$NON_INTERACTIVE_FLAG || \
+		(echo ""; echo "💡 Tip: Use 'make build-local' for local builds (no cost)"; exit 1)
+	@echo ""
+	@echo "Starting Cloud Build..."
+	@gcloud builds submit . \
 		--config cloudbuild.yaml \
 		--substitutions=_BASE_IMAGE=$(BASE_IMAGE),_IMAGE_TAG=$(IMAGE_TAG),_GCP_PROJECT_ID=$(GCP_PROJECT_ID),_GCP_REGION=$(GCP_REGION),_GCP_REGISTRY_NAME=$(GCP_REGISTRY_NAME)
+	@echo ""
+	@echo "Generating post-build usage report..."
+	@bash scripts/gcp-quota-checker.sh after --project $(GCP_PROJECT_ID) || true
 
 # Test image with sample project
 test-image:
@@ -114,4 +129,14 @@ dockerhub-login:
 check-secrets:
 	@echo "Checking available secrets..."
 	@bash scripts/check-secrets.sh
+
+# Check GCP quota usage
+quota-check:
+	@bash scripts/gcp-quota-checker.sh check --project $(GCP_PROJECT_ID) || \
+		bash scripts/gcp-quota-checker.sh check
+
+# Generate quota report
+quota-report:
+	@bash scripts/gcp-quota-checker.sh report --project $(GCP_PROJECT_ID) || \
+		bash scripts/gcp-quota-checker.sh report
 

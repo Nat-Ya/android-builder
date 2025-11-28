@@ -38,6 +38,16 @@ Android Build Tools version. Must match your project's requirements.
 **Default:** `34`
 Android API level. Set to your app's `targetSdkVersion`.
 
+### ANDROID_CMAKE_VERSION
+**Default:** `3.22.1`
+CMake version for native builds (required for projects with native modules).
+
+### INSTALL_NDK
+**Default:** `false`
+**Options:** `true` | `false`
+Whether to install Android NDK. Only enable if you need native modules.
+**Note:** Installing NDK significantly increases image size (~2GB).
+
 ## Runtime Configuration
 
 ### GRADLE_OPTS
@@ -127,4 +137,9 @@ AWS_REGION=eu-west-1 AWS_ECR_REPO=my-android-builder make deploy-aws
 **Override Android SDK version:**
 ```bash
 docker build --build-arg ANDROID_PLATFORM=33 --build-arg ANDROID_BUILD_TOOLS=33.0.2 -t android-build-image:api33 .
+```
+
+**Build with NDK for native modules:**
+```bash
+docker build --build-arg INSTALL_NDK=true -t android-build-image:ndk .
 ```
