@@ -81,7 +81,7 @@ build-gcp:
 # Test image with sample project
 test-image:
 	@echo "Testing image with sample project..."
-	@bash scripts/test-build.sh
+	@bash tests/test-build.sh
 
 # Security scan
 scan-security:
