@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Container now runs as root user for CI/CD compatibility (build containers are ephemeral and isolated)
+- Changed WORKDIR from `/home/android-builder` to `/workspace` for standard CI/CD workspace paths
+
 ### Added
 - Initial Dockerfile with multi-stage build support
 - Support for both Ubuntu 22.04 and Debian bullseye-slim base images
@@ -53,10 +57,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - N/A (initial release)
 
 ### Security
-- Non-root user execution (`android-builder`)
+- Container isolation (namespaces, cgroups)
 - Security scanning integrated into build pipeline
 - Minimal base image surface area
 - Regular security updates via base image updates
+- Ephemeral execution (build containers destroyed after use)
 
 ## [1.0.0] - TBD
 

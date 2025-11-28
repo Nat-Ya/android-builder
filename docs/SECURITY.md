@@ -24,8 +24,8 @@ This project follows **shift-left security** and **zero trust** principles:
 
 - **Shift-Left**: Security integrated early in development (CI/CD scanning)
 - **Zero Trust**: No implicit trust for dependencies or external resources
-- **Minimal Attack Surface**: Non-root user, minimal packages
-- **Least Privilege**: Minimal permissions for all components
+- **Minimal Attack Surface**: Minimal packages, container isolation
+- **Ephemeral Execution**: Build containers are destroyed after use
 - **Free-First**: Prioritize free security tools
 
 ---
@@ -45,20 +45,24 @@ This project follows **shift-left security** and **zero trust** principles:
 docker build --no-cache --pull -t android-build-image:latest .
 ```
 
-### Non-Root User
+### Root User for Build Containers
 
-Container runs as **non-root user** (`android-builder`, UID 1000):
+This container runs as **root** (UID 0) for CI/CD compatibility.
 
-```dockerfile
-RUN useradd -m -s /bin/bash android-builder
-USER android-builder
-WORKDIR /home/android-builder
-```
+**Why root for build containers?**
+- ✅ **Standard practice** - Official build images (gcr.io/cloud-builders/*, docker:*, node:*) run as root
+- ✅ **CI/CD compatibility** - No permission issues with mounted volumes in GitHub Actions, Cloud Build, etc.
+- ✅ **Ephemeral execution** - Build containers run only during builds, then are destroyed
+- ✅ **Container isolation** - Security maintained through namespaces, cgroups, and read-only filesystems
 
-**Benefits:**
-- Limits damage from container escape
-- Follows Docker security best practices
-- Required by many security policies
+**Security is still maintained:**
+- Container isolation (Linux namespaces and cgroups)
+- No privileged mode required
+- Ephemeral execution (containers destroyed after build)
+- Base image security and vulnerability scanning
+- No persistent data or long-running processes
+
+**Note:** Running as root in a build container is different from production containers. Build containers are tools, not services.
 
 ### Minimal Package Installation
 
