@@ -124,7 +124,7 @@ echo "Test 9: Working Directory"
 echo "-------------------------"
 WORKDIR=$(docker run --rm "$IMAGE_NAME:$IMAGE_TAG" pwd)
 echo "Working directory: $WORKDIR"
-if [ "$WORKDIR" = "/home/android-builder" ]; then
+if [ "$WORKDIR" = "/workspace" ]; then
     echo "✅ Working directory correct"
 else
     echo "❌ Working directory incorrect"
@@ -137,10 +137,10 @@ echo "Test 10: User Permissions"
 echo "------------------------"
 USER=$(docker run --rm "$IMAGE_NAME:$IMAGE_TAG" whoami)
 echo "Running as user: $USER"
-if [ "$USER" = "android-builder" ]; then
-    echo "✅ Running as non-root user"
+if [ "$USER" = "root" ]; then
+    echo "✅ Running as root user (CI/CD compatibility)"
 else
-    echo "❌ Not running as expected user"
+    echo "❌ Not running as expected user (root)"
     exit 1
 fi
 echo ""

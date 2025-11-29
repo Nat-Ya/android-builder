@@ -7,6 +7,8 @@
 BASE_IMAGE ?= ubuntu:22.04
 IMAGE_TAG ?= latest
 GCP_PROJECT_ID ?=
+# Default GCP region set to 'europe-west1' to serve European users with lower latency.
+# Adjust this value based on your primary user base location, as it affects costs and latency.
 GCP_REGION ?= europe-west1
 GCP_REGISTRY_NAME ?= android-build-images
 AWS_REGION ?= us-east-1
