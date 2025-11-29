@@ -116,7 +116,7 @@ get_today_build_minutes() {
 }
 
 # Function to estimate minutes from build count
-# GCP free tier: 120 build-minutes/day
+# GCP free tier: 120 build-minutes per billing cycle (typically monthly)
 # We estimate average build time and track build count
 estimate_minutes_from_builds() {
   local build_count=$1

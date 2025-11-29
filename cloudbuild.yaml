@@ -80,6 +80,8 @@ substitutions:
   _IMAGE_TAG: 'latest'
   _IMAGE_NAME: 'android-build-image'
   _GCP_PROJECT_ID: ''
+  # Default GCP region set to 'europe-west1' to serve European users with lower latency.
+  # Adjust this value based on your primary user base location, as it affects costs and latency.
   _GCP_REGION: 'europe-west1'
   _GCP_REGISTRY_NAME: 'android-build-images'
   _REGISTRY_URL: '${_GCP_REGION}-docker.pkg.dev/${_GCP_PROJECT_ID}/${_GCP_REGISTRY_NAME}'
