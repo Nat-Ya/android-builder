@@ -90,6 +90,7 @@ jobs:
 
       - name: Load Docker image
         run: |
+          set -e
           gunzip -c ubuntu-image.tar.gz | docker load
           docker tag ${{ env.IMAGE_NAME }}:test-ubuntu ${{ env.IMAGE_NAME }}:scan
 
@@ -124,6 +125,7 @@ jobs:
 
       - name: Load Docker image
         run: |
+          set -e
           gunzip -c ubuntu-image.tar.gz | docker load
 
       - name: Set up Docker Buildx
@@ -141,6 +143,7 @@ jobs:
 
       - name: Tag and push image
         run: |
+          set -e
           docker tag ${{ env.IMAGE_NAME }}:test-ubuntu ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}
           docker tag ${{ env.IMAGE_NAME }}:test-ubuntu ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}
