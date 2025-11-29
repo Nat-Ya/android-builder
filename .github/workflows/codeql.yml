@@ -32,7 +32,7 @@ jobs:
           # Analyze GitHub Actions workflow files for security issues
           # This repository primarily contains shell scripts and Dockerfiles
           # which aren't directly supported by CodeQL standard languages
-          languages: actions
+          languages: ['actions', 'javascript']
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
