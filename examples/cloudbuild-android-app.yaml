@@ -46,6 +46,7 @@ steps:
 
   # Step 3: Build Android app
   # NOTE: Cloud Build runs from project root, so cd into android/ subdirectory
+  # OPTIMIZED: Uses parallel execution, build caching, and increased workers
   - name: '${_BUILDER_IMAGE}'
     entrypoint: 'bash'
     args:
@@ -53,26 +54,33 @@ steps:
       - |
         set -e
         cd ${_APP_DIR}/android
-        
+
         # Handle Cloud Build substitution properly
         GRADLE_TASK="${_BUILD_TARGET}"
         if [ -z "$$GRADLE_TASK" ]; then
           GRADLE_TASK="assembleRelease"
         fi
-        
+
         echo "Building with task: $$GRADLE_TASK"
-        
+
+        # Use optimized GRADLE_OPTS (6GB heap, increased metaspace)
         GRADLE_OPTS="${_GRADLE_OPTS}"
         if [ -z "$$GRADLE_OPTS" ]; then
-          GRADLE_OPTS="-Xmx4096m -XX:MaxMetaspaceSize=1024m"
+          GRADLE_OPTS="-Xmx6144m -XX:MaxMetaspaceSize=2048m -XX:+HeapDumpOnOutOfMemoryError -XX:+UseParallelGC"
         fi
-        
+
         export GRADLE_OPTS
+
+        # Optimized build with parallel execution and caching
+        # Adjust --max-workers based on Cloud Build machine type
+        # N1_HIGHCPU_8: use 6-8 workers
+        # N1_HIGHCPU_32: use 16-24 workers
         ./gradlew $$GRADLE_TASK \
-          --no-daemon \
-          --max-workers=1 \
-          --no-parallel \
-          --stacktrace
+          --parallel \
+          --max-workers=${_MAX_WORKERS} \
+          --build-cache \
+          --stacktrace \
+          ${_GRADLE_EXTRA_FLAGS}
 
   # Step 4: Find and verify artifacts
   # NOTE: Step 3 ran from android/, artifacts are at app/build/outputs/ relative to android/
@@ -127,19 +135,25 @@ substitutions:
   _BUILDER_IMAGE: 'us-central1-docker.pkg.dev/${PROJECT_ID}/android-build-images/android-build-image:latest'
   _BUILD_TARGET: 'assembleRelease'  # assembleRelease, assembleDebug, bundleRelease, bundleDebug
   _APP_DIR: 'app'  # Directory containing Android project (e.g., 'app' for Expo projects)
-  _GRADLE_OPTS: '-Xmx4096m -XX:MaxMetaspaceSize=1024m'  # Gradle memory options (optional)
+
+  # Performance optimizations (NEW)
+  _GRADLE_OPTS: '-Xmx6144m -XX:MaxMetaspaceSize=2048m -XX:+HeapDumpOnOutOfMemoryError -XX:+UseParallelGC'  # Optimized for 6GB heap
+  _MAX_WORKERS: '8'  # Adjust based on machine type: N1_HIGHCPU_8=6-8, N1_HIGHCPU_32=16-24
+  _GRADLE_EXTRA_FLAGS: ''  # Extra Gradle flags (e.g., '--no-daemon' for clean builds)
+
   _GCS_BUCKET: ''  # GCS bucket for artifacts (required)
+
   # Keystore configuration (all optional - keystore can be in repo or GCS)
   _KEYSTORE_SECRET_NAME: ''  # Secret Manager secret name for keystore password (optional)
   _KEYSTORE_GCS_PATH: ''  # GCS path to keystore file, e.g., 'gs://bucket/keystore.jks' (optional)
   _KEYSTORE_FILE: 'app-release.keystore'  # Keystore filename (default: app-release.keystore)
   _KEY_ALIAS: 'app-release-key'  # Key alias (default: app-release-key)
 
-# Options
+# Options - OPTIMIZED for better performance
 options:
-  machineType: 'N1_HIGHCPU_8'
+  machineType: 'N1_HIGHCPU_32'  # Upgraded from N1_HIGHCPU_8 for faster parallel builds
   logging: CLOUD_LOGGING_ONLY
-  diskSizeGb: 100
+  diskSizeGb: 200  # Increased from 100GB for better caching
 
 # Timeout
 timeout: '1800s'

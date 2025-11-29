@@ -2,7 +2,7 @@
 # Builds, tests, scans, and deploys the Docker image
 
 steps:
-  # Step 1: Build Docker image
+  # Step 1: Build Docker image (optimized with optional components)
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
@@ -11,6 +11,8 @@ steps:
       - '--build-arg'
       - 'JAVA_VERSION=${_JAVA_VERSION}'
       - '--build-arg'
+      - 'JAVA_PACKAGE=${_JAVA_PACKAGE}'
+      - '--build-arg'
       - 'NODE_VERSION=${_NODE_VERSION}'
       - '--build-arg'
       - 'ANDROID_BUILD_TOOLS=${_ANDROID_BUILD_TOOLS}'
@@ -18,6 +20,12 @@ steps:
       - 'ANDROID_PLATFORM=${_ANDROID_PLATFORM}'
       - '--build-arg'
       - 'ANDROID_CMAKE_VERSION=${_ANDROID_CMAKE_VERSION}'
+      - '--build-arg'
+      - 'INSTALL_DOCKER_CLI=${_INSTALL_DOCKER_CLI}'
+      - '--build-arg'
+      - 'INSTALL_GCLOUD_SDK=${_INSTALL_GCLOUD_SDK}'
+      - '--build-arg'
+      - 'INSTALL_CMAKE=${_INSTALL_CMAKE}'
       - '--build-arg'
       - 'INSTALL_NDK=${_INSTALL_NDK}'
       - '-t'
@@ -70,13 +78,22 @@ steps:
 
 # Substitutions (all customizable)
 substitutions:
-  _BASE_IMAGE: 'ubuntu:22.04'
+  # Base configuration
+  _BASE_IMAGE: 'debian:bullseye-slim'  # Changed from ubuntu:22.04 for smaller size
   _JAVA_VERSION: '17'
+  _JAVA_PACKAGE: 'openjdk-17-jdk-headless'  # Use headless for smaller size
   _NODE_VERSION: '20'
   _ANDROID_BUILD_TOOLS: '34.0.0'
   _ANDROID_PLATFORM: '34'
   _ANDROID_CMAKE_VERSION: '3.22.1'
-  _INSTALL_NDK: 'false'
+
+  # Optional components (optimize image size by disabling unused tools)
+  _INSTALL_DOCKER_CLI: 'false'  # Only needed for Docker-in-Docker
+  _INSTALL_GCLOUD_SDK: 'true'   # Enable for GCP Cloud Build (Secret Manager, GCS)
+  _INSTALL_CMAKE: 'false'        # Only needed for native C/C++ modules
+  _INSTALL_NDK: 'false'          # Only needed for extensive native code
+
+  # Image configuration
   _IMAGE_TAG: 'latest'
   _IMAGE_NAME: 'android-build-image'
   _GCP_PROJECT_ID: ''

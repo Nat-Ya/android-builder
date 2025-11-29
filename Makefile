@@ -1,7 +1,7 @@
 # Android Build Container Image - Makefile
 # Build and deploy commands for the Android build container image
 
-.PHONY: help build-local build-gcp test-image scan-security deploy-gcp deploy-aws deploy-azure deploy-dockerhub gcp-login aws-login azure-login dockerhub-login check-secrets quota-check quota-report
+.PHONY: help build-local build-minimal build-gcp-optimized build-native build-gcp test-image scan-security deploy-gcp deploy-aws deploy-azure deploy-dockerhub gcp-login aws-login azure-login dockerhub-login check-secrets quota-check quota-report
 
 # Default values (all customizable)
 BASE_IMAGE ?= ubuntu:22.04
@@ -19,9 +19,14 @@ DOCKERHUB_REPO ?= android-build-image
 help:
 	@echo "Android Build Container Image - Build & Deploy Commands"
 	@echo ""
-	@echo "Build:"
-	@echo "  make build-local          - Build image locally"
+	@echo "Build (Optimized):"
+	@echo "  make build-local          - Build standard image locally"
+	@echo "  make build-minimal        - Build minimal image (~1.8GB, no optional tools)"
+	@echo "  make build-gcp-optimized  - Build GCP-optimized image (~2.2GB, includes GCloud SDK)"
+	@echo "  make build-native         - Build with native module support (CMake + NDK)"
 	@echo "  make build-gcp            - Build via GCP Cloud Build"
+	@echo ""
+	@echo "Testing & Security:"
 	@echo "  make test-image           - Test image with sample project"
 	@echo "  make scan-security        - Run security scans"
 	@echo ""
@@ -43,15 +48,55 @@ help:
 	@echo "  make quota-report         - Generate detailed quota report"
 	@echo ""
 	@echo "Customization:"
-	@echo "  BASE_IMAGE=debian:bullseye-slim make build-local"
-	@echo "  IMAGE_TAG=v1.0.0 make deploy-gcp"
+	@echo "  IMAGE_TAG=v1.0.0 make build-minimal"
 	@echo "  NON_INTERACTIVE=true make build-gcp  - Auto-fallback to local if quota exceeded"
 
-# Build locally
+# Build locally (default configuration - optional tools disabled)
 build-local:
 	@echo "Building Android build image locally..."
 	docker build \
 		--build-arg BASE_IMAGE=$(BASE_IMAGE) \
+		-t android-build-image:$(IMAGE_TAG) \
+		.
+
+# Build minimal image (smallest size - ~1.8GB)
+build-minimal:
+	@echo "Building minimal Android build image (~1.8GB)..."
+	@echo "Includes: Java, Node.js, Android SDK (no GCloud SDK, CMake, or NDK)"
+	docker build \
+		--build-arg BASE_IMAGE=debian:bullseye-slim \
+		--build-arg INSTALL_DOCKER_CLI=false \
+		--build-arg INSTALL_GCLOUD_SDK=false \
+		--build-arg INSTALL_CMAKE=false \
+		--build-arg INSTALL_NDK=false \
+		-t android-build-image:minimal \
+		-t android-build-image:$(IMAGE_TAG) \
+		.
+
+# Build GCP-optimized image (includes GCloud SDK - ~2.2GB)
+build-gcp-optimized:
+	@echo "Building GCP-optimized Android build image (~2.2GB)..."
+	@echo "Includes: Java, Node.js, Android SDK, GCloud SDK"
+	docker build \
+		--build-arg BASE_IMAGE=debian:bullseye-slim \
+		--build-arg INSTALL_DOCKER_CLI=false \
+		--build-arg INSTALL_GCLOUD_SDK=true \
+		--build-arg INSTALL_CMAKE=false \
+		--build-arg INSTALL_NDK=false \
+		-t android-build-image:gcp-optimized \
+		-t android-build-image:$(IMAGE_TAG) \
+		.
+
+# Build with native module support (includes CMake and NDK - ~4.5GB)
+build-native:
+	@echo "Building Android build image with native module support (~4.5GB)..."
+	@echo "Includes: Java, Node.js, Android SDK, GCloud SDK, CMake, NDK"
+	docker build \
+		--build-arg INSTALL_DOCKER_CLI=false \
+		--build-arg INSTALL_GCLOUD_SDK=true \
+		--build-arg INSTALL_CMAKE=true \
+		--build-arg INSTALL_NDK=true \
+		-t android-build-image:native \
 		-t android-build-image:$(IMAGE_TAG) \
 		.
 
