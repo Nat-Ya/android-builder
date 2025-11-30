@@ -68,6 +68,7 @@ All configuration values should be customizable via environment variables. See `
 
 ## Documentation
 
+The project uses a `docs/` directory for detailed documentation, with `README.md` serving as the entry point for general information. Additional documentation files such as `CHANGELOG.md` and topic-specific docs (e.g., `docs/ENV_VARS.md`, `docs/SECURITY.md`) provide further details. Please follow the existing structure and keep documentation organized by topic.
 When adding new features:
 - Update relevant documentation in `docs/`
 - Keep `README.md` concise with links to detailed docs
