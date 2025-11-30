@@ -7,7 +7,7 @@ This repository provides a lean, secure Docker container image for Android SDK, 
 ## Technology Stack
 
 - **Docker**: Multi-stage Dockerfile for building the container image
-- **Shell Scripts (Bash)**: Helper scripts and deployment automation
+- **Bash Scripts**: Helper scripts and deployment automation
 - **Makefile**: Build and deployment commands
 - **GitHub Actions**: CI/CD workflows
 - **Google Cloud Build**: Alternative cloud-based build system
